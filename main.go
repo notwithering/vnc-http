@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/go-vgo/robotgo"
 	"github.com/kbinani/screenshot"
 	"github.com/nfnt/resize"
 )
@@ -45,6 +46,50 @@ func main() {
 		}
 
 		fmt.Fprint(w, string(rawData))
+	})
+	http.HandleFunc("/in/mouse/move", func(w http.ResponseWriter, r *http.Request) {
+		values := r.URL.Query()
+
+		xstr := values.Get("x")
+		ystr := values.Get("y")
+		leftstr := values.Get("left")
+		topstr := values.Get("top")
+
+		if xstr != "" && ystr != "" {
+			x, err := strconv.Atoi(xstr)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, err)
+				return
+			}
+			y, err := strconv.Atoi(ystr)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, err)
+				return
+			}
+
+			b := screenshot.GetDisplayBounds(0)
+			robotgo.Move(x+b.Max.X, y+b.Min.Y)
+		} else if leftstr != "" && topstr != "" {
+			left, err := strconv.ParseFloat(leftstr, 64)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, err)
+				return
+			}
+			top, err := strconv.ParseFloat(topstr, 64)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, err)
+				return
+			}
+
+			b := screenshot.GetDisplayBounds(0)
+			absLeft := int(left*float64(b.Dx())) + b.Max.X
+			absTop := int(top*float64(b.Dy())) + b.Min.Y
+			robotgo.Move(absLeft, absTop)
+		}
 	})
 
 	http.ListenAndServe(":8080", nil)
